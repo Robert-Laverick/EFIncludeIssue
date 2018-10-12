@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Data.Entity;
 using System.Linq;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EFIncludeIssue.Model;
+using EFIncludeIssue.ViewModel;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace EFIncludeIssue
@@ -9,6 +12,17 @@ namespace EFIncludeIssue
     [TestClass]
     public class UnitTest1
     {
+        static UnitTest1()
+        {
+            Mapper.Initialize(cfg => {
+                cfg.CreateMap<Document, DocumentDto>().ReverseMap();
+                cfg.CreateMap<MetaInfo, MetaInfoDto>().ReverseMap();
+                cfg.CreateMap<MetaInfo, AuthoredDocumentDto>()
+                    .ForMember(dst => dst.Author, opt => opt.MapFrom(src => src))
+                    .ForMember(dst => dst.Document, opt => opt.MapFrom(src => src.Document));
+            });
+        }
+
         [TestMethod]
         public void GetAllDocuments()
         {
@@ -73,6 +87,29 @@ namespace EFIncludeIssue
                 {
                     Assert.IsTrue(dc.Doc.MetaInfo.Any(m => m.Name == "Author"), "All documents must have at least one Author");
                     Assert.IsTrue(dc.Doc.MetaInfo.Any(m => m.Name == "Created On"), "All documents must have a Created On meta value");
+                }
+            }
+        }
+
+        [TestMethod]
+        public void GetAllDocumentsByAuthorProjectTo()
+        {
+            using (var ctx = new TestDbContext())
+            {
+                ctx.Configuration.LazyLoadingEnabled = false;
+
+                var DocsByCreator = ctx.Documents
+                    .Include(d => d.MetaInfo) // Load all the metaInfo for each object
+                    .SelectMany(d => d.MetaInfo.Where(m => m.Name == "Author")) // For each Author
+                    .ProjectTo<AuthoredDocumentDto>() // Create an object with the Author and the Document they authored.
+                    .ToList(); // Actualize the collection
+
+                Assert.AreEqual(5, DocsByCreator.Count);
+
+                foreach (var dc in DocsByCreator)
+                {
+                    Assert.IsTrue(dc.Document.MetaInfo.Any(m => m.Name == "Author"), "All documents must have at least one Author");
+                    Assert.IsTrue(dc.Document.MetaInfo.Any(m => m.Name == "Created On"), "All documents must have a Created On meta value");
                 }
             }
         }

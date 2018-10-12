@@ -1,18 +1,15 @@
-﻿using AutoMapper.Configuration.Conventions;
-using EFIncludeIssue.ViewModel;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EFIncludeIssue.Model
+namespace EFIncludeIssue.ViewModel
 {
-    public class MetaInfo
+    public class MetaInfoDto
     {
         public Guid Id { get; set; }
         public Guid DocumentId { get; set; }
-        public virtual Document Document { get; set; }
         public string Name { get; set; }
         public string Value { get; set; }
     }
